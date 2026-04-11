@@ -1,0 +1,15 @@
+# Visual Studio Code
+.vscode/
+
+# Logs
+logs/
+*.log
+
+# Build files (ASP.NET / C#)
+bin/
+obj/
+[Bb]in/
+[Oo]bj/
+
+# OS Generated
+.DS_Store

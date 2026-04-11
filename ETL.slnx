@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="src/ETL.Web/ETL.Web.csproj" />
+  <Project Path="src/ETL.Domain/ETL.Domain.csproj" />
+  <Project Path="src/ETL.Application/ETL.Application.csproj" />
+  <Project Path="src/ETL.Infrastructure/ETL.Infrastructure.csproj" />
+  <Project Path="tests/ETL.Application.Tests/ETL.Application.Tests.csproj" />
+</Solution>

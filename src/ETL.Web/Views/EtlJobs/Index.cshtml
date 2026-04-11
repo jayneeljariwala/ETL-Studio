@@ -1,0 +1,58 @@
+@model IReadOnlyCollection<EtlJobListItemViewModel>
+@{
+    ViewData["Title"] = "ETL Jobs";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-1">ETL Jobs</h1>
+        <p class="text-muted mb-0">Manage job definitions and execution lifecycle.</p>
+    </div>
+    <a asp-action="Create" class="btn btn-primary">New Job</a>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+        @if (!Model.Any())
+        {
+            <div class="p-4 text-muted">No ETL jobs found. Create your first job to get started.</div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Source</th>
+                        <th>Destination</th>
+                        <th>Status</th>
+                        <th>Active</th>
+                        <th>Created (UTC)</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>@item.Name</td>
+                            <td>@item.SourceType</td>
+                            <td>@item.DestinationType</td>
+                            <td>@item.CurrentStatus</td>
+                            <td>
+                                <span class="badge @(item.IsActive ? "bg-success" : "bg-secondary")">@(item.IsActive ? "Yes" : "No")</span>
+                            </td>
+                            <td>@item.CreatedAtUtc.ToString("u")</td>
+                            <td class="text-end">
+                                <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">Details</a>
+                                <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-secondary">Edit</a>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

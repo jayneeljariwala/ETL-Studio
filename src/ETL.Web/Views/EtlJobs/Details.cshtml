@@ -1,0 +1,113 @@
+@model EtlJobDetailsViewModel
+@{
+    ViewData["Title"] = "ETL Job Details";
+}
+
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <h1 class="h3 mb-1">@Model.Name</h1>
+        <p class="text-muted mb-0">@Model.Description</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-outline-secondary">Edit</a>
+        <form asp-action="Run" asp-route-id="@Model.Id" method="post" class="d-inline">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-primary">Run Now</button>
+        </form>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3"><div class="card border-0 shadow-sm"><div class="card-body"><div class="small text-muted">Source</div><div>@Model.SourceType</div></div></div></div>
+    <div class="col-md-3"><div class="card border-0 shadow-sm"><div class="card-body"><div class="small text-muted">Destination</div><div>@Model.DestinationType</div></div></div></div>
+    <div class="col-md-3"><div class="card border-0 shadow-sm"><div class="card-body"><div class="small text-muted">Load Strategy</div><div>@Model.LoadStrategy</div></div></div></div>
+    <div class="col-md-3"><div class="card border-0 shadow-sm"><div class="card-body"><div class="small text-muted">Status</div><div>@Model.CurrentStatus (@(Model.IsActive ? "Active" : "Inactive"))</div></div></div></div>
+</div>
+
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h2 class="h5 mb-0">Field Mappings</h2>
+        <div class="d-flex gap-2">
+            @if (Model.IsActive)
+            {
+                <form asp-action="Deactivate" asp-route-id="@Model.Id" method="post">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-sm btn-outline-warning">Deactivate</button>
+                </form>
+            }
+            else
+            {
+                <form asp-action="Activate" asp-route-id="@Model.Id" method="post">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-sm btn-outline-success">Activate</button>
+                </form>
+            }
+            <a asp-action="History" asp-route-id="@Model.Id" class="btn btn-sm btn-outline-primary">History</a>
+            <a asp-action="Logs" asp-route-id="@Model.Id" class="btn btn-sm btn-outline-danger">Logs</a>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        @if (!Model.FieldMappings.Any())
+        {
+            <div class="p-4 text-muted">No mappings configured.</div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-striped mb-0">
+                    <thead>
+                    <tr>
+                        <th>Order</th>
+                        <th>Source Field</th>
+                        <th>Destination Field</th>
+                        <th>Required</th>
+                        <th>Default Value</th>
+                        <th>Transformations</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var map in Model.FieldMappings.OrderBy(x => x.Order))
+                    {
+                        <tr>
+                            <td>@map.Order</td>
+                            <td>@map.SourceField</td>
+                            <td>@map.DestinationField</td>
+                            <td>@(map.IsRequired ? "Yes" : "No")</td>
+                            <td>@(map.DefaultValue ?? "-")</td>
+                            <td>
+                                @if (!map.Transformations.Any())
+                                {
+                                    <span>-</span>
+                                }
+                                else
+                                {
+                                    @string.Join(", ", map.Transformations.OrderBy(t => t.Order).Select(t => t.Type + (string.IsNullOrWhiteSpace(t.Parameter) ? string.Empty : $"({t.Parameter})")))
+                                }
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white"><h2 class="h6 mb-0">Source Configuration</h2></div>
+            <div class="card-body">
+                <pre class="mb-0 small">@Model.SourceConfigurationJson</pre>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white"><h2 class="h6 mb-0">Destination Configuration</h2></div>
+            <div class="card-body">
+                <pre class="mb-0 small">@Model.DestinationConfigurationJson</pre>
+            </div>
+        </div>
+    </div>
+</div>

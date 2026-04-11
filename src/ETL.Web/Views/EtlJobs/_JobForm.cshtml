@@ -1,0 +1,196 @@
+@using ETL.Domain.Enums
+@model EtlJobUpsertViewModel
+
+<div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+<div class="row g-3 mb-3">
+    <div class="col-md-6">
+        <label asp-for="Name" class="form-label"></label>
+        <input asp-for="Name" class="form-control" />
+        <span asp-validation-for="Name" class="text-danger"></span>
+    </div>
+    <div class="col-md-6">
+        <label asp-for="LoadStrategy" class="form-label"></label>
+        <select asp-for="LoadStrategy" asp-items="Html.GetEnumSelectList<LoadStrategy>()" class="form-select"></select>
+        <span asp-validation-for="LoadStrategy" class="text-danger"></span>
+    </div>
+    <div class="col-md-6">
+        <label asp-for="SourceType" class="form-label"></label>
+        <select asp-for="SourceType" asp-items="Html.GetEnumSelectList<DataSourceType>()" class="form-select"></select>
+        <span asp-validation-for="SourceType" class="text-danger"></span>
+    </div>
+    <div class="col-md-6">
+        <label asp-for="DestinationType" class="form-label"></label>
+        <select asp-for="DestinationType" asp-items="Html.GetEnumSelectList<DataDestinationType>()" class="form-select"></select>
+        <span asp-validation-for="DestinationType" class="text-danger"></span>
+    </div>
+    <div class="col-12">
+        <label asp-for="Description" class="form-label"></label>
+        <textarea asp-for="Description" class="form-control" rows="2"></textarea>
+        <span asp-validation-for="Description" class="text-danger"></span>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-lg-6">
+        <label asp-for="SourceConfigurationJson" class="form-label">Source Configuration (JSON)</label>
+        <textarea asp-for="SourceConfigurationJson" class="form-control font-monospace" rows="8"></textarea>
+        <span asp-validation-for="SourceConfigurationJson" class="text-danger"></span>
+    </div>
+    <div class="col-lg-6">
+        <label asp-for="DestinationConfigurationJson" class="form-label">Destination Configuration (JSON)</label>
+        <textarea asp-for="DestinationConfigurationJson" class="form-control font-monospace" rows="8"></textarea>
+        <span asp-validation-for="DestinationConfigurationJson" class="text-danger"></span>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white">
+        <h2 class="h5 mb-1">How to use JSON Configuration</h2>
+        <small class="text-muted">These examples update based on Source Type and Destination Type selection.</small>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-lg-6">
+                <h3 class="h6">Source Configuration (JSON)</h3>
+                <pre class="small mb-2"><code id="sourceConfigExample"></code></pre>
+                <ul class="small text-muted mb-0">
+                    <li>Use absolute file paths for CSV/Excel.</li>
+                    <li>For SQL source, provide a read-only query.</li>
+                    <li>For API source, response should be an array or use <code>rootArrayProperty</code>.</li>
+                </ul>
+            </div>
+            <div class="col-lg-6">
+                <h3 class="h6">Destination Configuration (JSON)</h3>
+                <pre class="small mb-2"><code id="destinationConfigExample"></code></pre>
+                <ul class="small text-muted mb-0">
+                    <li><code>tableName</code>: use <code>schema.table</code> format.</li>
+                    <li><code>keyColumns</code> are required for Upsert strategy.</li>
+                    <li><code>batchSize</code> controls write throughput.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <div>
+            <h2 class="h5 mb-0">Field Mapping</h2>
+            <small class="text-muted">Drag rows to reorder mapping execution order.</small>
+        </div>
+        <button type="button" id="addMappingBtn" class="btn btn-sm btn-outline-primary">Add Mapping</button>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-bordered align-middle mb-0" id="mappingTable">
+                <thead class="table-light">
+                <tr>
+                    <th style="width: 42px"></th>
+                    <th>Source</th>
+                    <th>Destination</th>
+                    <th>Required</th>
+                    <th>Default</th>
+                    <th>Transform</th>
+                    <th style="width: 60px"></th>
+                </tr>
+                </thead>
+                <tbody id="mappingTableBody">
+                @for (var i = 0; i < Model.FieldMappings.Count; i++)
+                {
+                    var transformation = Model.FieldMappings[i].Transformations.OrderBy(x => x.Order).FirstOrDefault();
+                    <tr class="mapping-row" draggable="true">
+                        <td class="text-center text-muted drag-handle">::</td>
+                        <td>
+                            <input type="text" class="form-control" name="FieldMappings[@i].SourceField" value="@Model.FieldMappings[i].SourceField" required />
+                        </td>
+                        <td>
+                            <input type="text" class="form-control" name="FieldMappings[@i].DestinationField" value="@Model.FieldMappings[i].DestinationField" required />
+                        </td>
+                        <td class="text-center">
+                            <input type="hidden" name="FieldMappings[@i].IsRequired" value="false" />
+                            <input type="checkbox" class="form-check-input" name="FieldMappings[@i].IsRequired" value="true" @(Model.FieldMappings[i].IsRequired ? "checked" : string.Empty) />
+                        </td>
+                        <td>
+                            <input type="text" class="form-control" name="FieldMappings[@i].DefaultValue" value="@Model.FieldMappings[i].DefaultValue" />
+                        </td>
+                        <td>
+                            <div class="row g-1">
+                                <div class="col-6">
+                                    <select class="form-select form-select-sm" name="FieldMappings[@i].Transformations[0].Type">
+                                        @if (transformation is null)
+                                        {
+                                            <option value="0" selected>None</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="0">None</option>
+                                        }
+                                        @foreach (var transformType in Enum.GetValues<TransformationType>())
+                                        {
+                                            @if (transformation?.Type == transformType)
+                                            {
+                                                <option value="@((int)transformType)" selected>@transformType</option>
+                                            }
+                                            else
+                                            {
+                                                <option value="@((int)transformType)">@transformType</option>
+                                            }
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-6">
+                                    <input type="text" class="form-control form-control-sm" placeholder="Parameter" name="FieldMappings[@i].Transformations[0].Parameter" value="@transformation?.Parameter" />
+                                </div>
+                            </div>
+                            <input type="hidden" name="FieldMappings[@i].Transformations[0].Order" value="0" />
+                            <input type="hidden" name="FieldMappings[@i].Order" value="@Model.FieldMappings[i].Order" class="mapping-order" />
+                        </td>
+                        <td class="text-center">
+                            <button type="button" class="btn btn-sm btn-outline-danger remove-mapping">x</button>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@if (Model.Id.HasValue)
+{
+    <input type="hidden" asp-for="Id" />
+}
+<input type="hidden" asp-for="IsActive" />
+
+<template id="mappingRowTemplate">
+    <tr class="mapping-row" draggable="true">
+        <td class="text-center text-muted drag-handle">::</td>
+        <td><input type="text" class="form-control" data-name="FieldMappings[__index__].SourceField" required /></td>
+        <td><input type="text" class="form-control" data-name="FieldMappings[__index__].DestinationField" required /></td>
+        <td class="text-center">
+            <input type="hidden" data-name="FieldMappings[__index__].IsRequired" value="false" />
+            <input type="checkbox" class="form-check-input" data-name="FieldMappings[__index__].IsRequired" value="true" />
+        </td>
+        <td><input type="text" class="form-control" data-name="FieldMappings[__index__].DefaultValue" /></td>
+        <td>
+            <div class="row g-1">
+                <div class="col-6">
+                    <select class="form-select form-select-sm" data-name="FieldMappings[__index__].Transformations[0].Type">
+                        <option value="0" selected>None</option>
+                        @foreach (var transformType in Enum.GetValues<TransformationType>())
+                        {
+                            <option value="@((int)transformType)">@transformType</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-6">
+                    <input type="text" class="form-control form-control-sm" placeholder="Parameter" data-name="FieldMappings[__index__].Transformations[0].Parameter" />
+                </div>
+            </div>
+            <input type="hidden" data-name="FieldMappings[__index__].Transformations[0].Order" value="0" />
+            <input type="hidden" data-name="FieldMappings[__index__].Order" class="mapping-order" value="0" />
+        </td>
+        <td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger remove-mapping">x</button></td>
+    </tr>
+</template>

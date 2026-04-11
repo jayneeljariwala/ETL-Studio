@@ -3,12 +3,25 @@
     const body = document.getElementById("mappingTableBody");
     const template = document.getElementById("mappingRowTemplate");
     const addButton = document.getElementById("addMappingBtn");
+    const helpAlert = document.getElementById("customExpressionHelp");
 
     if (!form || !body || !template || !addButton) {
         return;
     }
 
     let dragSource = null;
+
+    function checkCustomExpressionSelection() {
+        if (!helpAlert) return;
+        const selects = Array.from(body.querySelectorAll("select"));
+        // TransformationType.CustomExpression is typically 5
+        const hasCustom = selects.some(s => s.value === "5" || s.value === "CustomExpression");
+        if (hasCustom) {
+            helpAlert.classList.remove("d-none");
+        } else {
+            helpAlert.classList.add("d-none");
+        }
+    }
 
     function setRowIndexing() {
         const rows = Array.from(body.querySelectorAll("tr.mapping-row"));
@@ -68,6 +81,7 @@
                     addMappingRow();
                 }
                 setRowIndexing();
+                checkCustomExpressionSelection();
             });
         }
     }
@@ -91,6 +105,13 @@
 
     body.querySelectorAll("tr.mapping-row").forEach(wireRow);
     setRowIndexing();
+    checkCustomExpressionSelection();
+
+    body.addEventListener("change", function(e) {
+        if (e.target.tagName === "SELECT") {
+            checkCustomExpressionSelection();
+        }
+    });
 
     form.addEventListener("submit", setRowIndexing);
 })();

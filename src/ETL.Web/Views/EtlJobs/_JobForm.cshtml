@@ -82,6 +82,15 @@
         <button type="button" id="addMappingBtn" class="btn btn-sm btn-outline-primary">Add Mapping</button>
     </div>
     <div class="card-body p-0">
+        <div id="customExpressionHelp" class="alert alert-info m-3 d-none">
+            <h6 class="alert-heading mb-1 fw-bold">Custom Expression Guide</h6>
+            <p class="mb-1 small">You have selected <strong>CustomExpression</strong>. You can write C# script to transform the data:</p>
+            <ul class="mb-0 small ps-3">
+                <li><code>Value</code>: The current column's value as an object (e.g., <code>Value?.ToString()?.ToUpper()</code>)</li>
+                <li><code>Row["ColumnName"]</code>: Access other columns in the same row (e.g., <code>$"{Row["FirstName"]} {Row["LastName"]}"</code>).</li>
+                <li>Your expression must evaluate to a single value. Do not use trailing semicolons.</li>
+            </ul>
+        </div>
         <div class="table-responsive">
             <table class="table table-bordered align-middle mb-0" id="mappingTable">
                 <thead class="table-light">

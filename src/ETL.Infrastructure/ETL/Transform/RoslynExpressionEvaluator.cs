@@ -7,6 +7,10 @@ namespace ETL.Infrastructure.ETL.Transform;
 public sealed class RoslynExpressionEvaluator : ICustomExpressionEvaluator
 {
     private static readonly ScriptOptions ScriptOptions = Microsoft.CodeAnalysis.Scripting.ScriptOptions.Default
+        .AddReferences(
+            typeof(object).Assembly,
+            typeof(System.Linq.Enumerable).Assembly,
+            typeof(System.Collections.Generic.List<>).Assembly)
         .AddImports("System", "System.Linq", "System.Collections.Generic");
 
     public Task<object?> EvaluateAsync(

@@ -168,7 +168,54 @@
         }
     });
 
+    let isCompletionRegistered = false;
+
     function initMonacoAndShow(code) {
+        if (!isCompletionRegistered) {
+            monaco.languages.registerCompletionItemProvider('csharp', {
+                triggerCharacters: ['.'],
+                provideCompletionItems: async function(model, position) {
+                    var word = model.getWordUntilPosition(position);
+                    var range = {
+                        startLineNumber: position.lineNumber,
+                        endLineNumber: position.lineNumber,
+                        startColumn: word.startColumn,
+                        endColumn: word.endColumn
+                    };
+                    
+                    var offset = model.getOffsetAt(position);
+                    var currentCode = model.getValue();
+
+                    try {
+                        const response = await fetch('/api/CodeEditor/completions', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ code: currentCode, position: offset })
+                        });
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (data.suggestions && data.suggestions.length > 0) {
+                                const suggestions = data.suggestions.map(s => ({
+                                    label: s.label,
+                                    kind: s.kind,
+                                    insertText: s.insertText,
+                                    detail: s.detail,
+                                    range: range
+                                }));
+                                return { suggestions: suggestions };
+                            }
+                        }
+                    } catch (e) {
+                        console.error('Completion error', e);
+                    }
+                    
+                    return { suggestions: [] };
+                }
+            });
+            isCompletionRegistered = true;
+        }
+
         if (!editorInstance) {
             editorInstance = monaco.editor.create(document.getElementById("monacoEditorContainer"), {
                 value: code,

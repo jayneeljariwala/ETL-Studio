@@ -21,6 +21,21 @@
         } else {
             helpAlert.classList.add("d-none");
         }
+
+        body.querySelectorAll("tr.mapping-row").forEach(row => {
+            const select = row.querySelector("select");
+            const btn = row.querySelector(".code-editor-btn");
+            const input = row.querySelector(".parameter-input");
+            if (select && btn && input) {
+                if (select.value === "5" || select.value === "CustomExpression") {
+                    btn.classList.remove("d-none");
+                    input.readOnly = true;
+                } else {
+                    btn.classList.add("d-none");
+                    input.readOnly = false;
+                }
+            }
+        });
     }
 
     function setRowIndexing() {
@@ -114,4 +129,116 @@
     });
 
     form.addEventListener("submit", setRowIndexing);
+
+    // --- Monaco Editor Logic ---
+    let editorInstance = null;
+    let currentInputTarget = null;
+    const codeEditorModalEl = document.getElementById("codeEditorModal");
+    let codeEditorModal;
+
+    if (codeEditorModalEl) {
+        codeEditorModal = new bootstrap.Modal(codeEditorModalEl);
+        
+        // Fix for Monaco editor rendering issue in Bootstrap Modal
+        codeEditorModalEl.addEventListener("shown.bs.modal", () => {
+            if (editorInstance) {
+                editorInstance.layout();
+                editorInstance.focus();
+            }
+        });
+    }
+    
+    // Delegate click for code-editor-btn
+    body.addEventListener("click", function(e) {
+        const btn = e.target.closest(".code-editor-btn");
+        if (!btn) return;
+        
+        currentInputTarget = btn.closest(".input-group").querySelector(".parameter-input");
+        const currentCode = currentInputTarget.value || "";
+        
+        if (!editorInstance) {
+            if (window.monacoEditorReady) {
+                initMonacoAndShow(currentCode);
+            } else {
+                window.onMonacoReady = () => initMonacoAndShow(currentCode);
+            }
+        } else {
+            editorInstance.setValue(currentCode);
+            codeEditorModal.show();
+        }
+    });
+
+    let isCompletionRegistered = false;
+
+    function initMonacoAndShow(code) {
+        if (!isCompletionRegistered) {
+            monaco.languages.registerCompletionItemProvider('csharp', {
+                triggerCharacters: ['.'],
+                provideCompletionItems: async function(model, position) {
+                    var word = model.getWordUntilPosition(position);
+                    var range = {
+                        startLineNumber: position.lineNumber,
+                        endLineNumber: position.lineNumber,
+                        startColumn: word.startColumn,
+                        endColumn: word.endColumn
+                    };
+                    
+                    var offset = model.getOffsetAt(position);
+                    var currentCode = model.getValue();
+
+                    try {
+                        const response = await fetch('/api/CodeEditor/completions', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ code: currentCode, position: offset })
+                        });
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (data.suggestions && data.suggestions.length > 0) {
+                                const suggestions = data.suggestions.map(s => ({
+                                    label: s.label,
+                                    kind: s.kind,
+                                    insertText: s.insertText,
+                                    detail: s.detail,
+                                    range: range
+                                }));
+                                return { suggestions: suggestions };
+                            }
+                        }
+                    } catch (e) {
+                        console.error('Completion error', e);
+                    }
+                    
+                    return { suggestions: [] };
+                }
+            });
+            isCompletionRegistered = true;
+        }
+
+        if (!editorInstance) {
+            editorInstance = monaco.editor.create(document.getElementById("monacoEditorContainer"), {
+                value: code,
+                language: 'csharp',
+                theme: 'vs-dark',
+                automaticLayout: true,
+                minimap: { enabled: false }
+            });
+        } else {
+            editorInstance.setValue(code);
+        }
+        codeEditorModal.show();
+    }
+
+    const saveCodeBtn = document.getElementById("saveCodeBtn");
+    if (saveCodeBtn) {
+        saveCodeBtn.addEventListener("click", function() {
+            if (currentInputTarget && editorInstance) {
+                currentInputTarget.value = editorInstance.getValue();
+            }
+            if (codeEditorModal) {
+                codeEditorModal.hide();
+            }
+        });
+    }
 })();

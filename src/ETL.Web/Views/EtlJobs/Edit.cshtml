@@ -23,4 +23,16 @@
     <partial name="_ValidationScriptsPartial" />
     <script src="~/js/etl-job-form.js" asp-append-version="true"></script>
     <script src="~/js/etl-config-help.js" asp-append-version="true"></script>
+    
+    <!-- Monaco Editor loader -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js"></script>
+    <script>
+        require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs' }});
+        require(['vs/editor/editor.main'], function() {
+            window.monacoEditorReady = true;
+            if (window.onMonacoReady) {
+                window.onMonacoReady();
+            }
+        });
+    </script>
 }

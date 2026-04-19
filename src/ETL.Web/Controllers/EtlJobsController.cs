@@ -4,31 +4,38 @@ using ETL.Domain.Enums;
 using ETL.Domain.ValueObjects;
 using ETL.Infrastructure.BackgroundJobs;
 using ETL.Infrastructure.Identity;
-using ETL.Infrastructure.Persistence;
+using ETL.Application.Interfaces.Repositories;
+using ETL.Infrastructure.Identity;
 using ETL.Web.Models.EtlJobs;
 using Hangfire;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Mvc;
 
 namespace ETL.Web.Controllers;
 
 [Authorize]
 public sealed class EtlJobsController : Controller
 {
-    private readonly ApplicationDbContext _dbContext;
+    private readonly IEtlJobRepository _etlJobRepository;
+    private readonly IUserRepository _userRepository;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly UserManager<AppIdentityUser> _userManager;
     private readonly IBackgroundJobClient _backgroundJobClient;
     private readonly ILogger<EtlJobsController> _logger;
 
     public EtlJobsController(
-        ApplicationDbContext dbContext,
+        IEtlJobRepository etlJobRepository,
+        IUserRepository userRepository,
+        IUnitOfWork unitOfWork,
         UserManager<AppIdentityUser> userManager,
         IBackgroundJobClient backgroundJobClient,
         ILogger<EtlJobsController> logger)
     {
-        _dbContext = dbContext;
+        _etlJobRepository = etlJobRepository;
+        _userRepository = userRepository;
+        _unitOfWork = unitOfWork;
         _userManager = userManager;
         _backgroundJobClient = backgroundJobClient;
         _logger = logger;
@@ -37,9 +44,8 @@ public sealed class EtlJobsController : Controller
     [HttpGet]
     public async Task<IActionResult> Index(CancellationToken cancellationToken)
     {
-        var jobs = await _dbContext.EtlJobs
-            .AsNoTracking()
-            .OrderByDescending(x => x.CreatedAtUtc)
+        var allJobs = await _etlJobRepository.GetAllJobsAsync(cancellationToken);
+        var jobs = allJobs
             .Select(x => new EtlJobListItemViewModel
             {
                 Id = x.Id,
@@ -50,7 +56,7 @@ public sealed class EtlJobsController : Controller
                 IsActive = x.IsActive,
                 CreatedAtUtc = x.CreatedAtUtc
             })
-            .ToListAsync(cancellationToken);
+            .ToList();
 
         return View(jobs);
     }
@@ -58,10 +64,7 @@ public sealed class EtlJobsController : Controller
     [HttpGet]
     public async Task<IActionResult> Details(Guid id, CancellationToken cancellationToken)
     {
-        var job = await _dbContext.EtlJobs
-            .AsNoTracking()
-            .Include(x => x.FieldMappings)
-            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        var job = await _etlJobRepository.GetJobWithDetailsByIdAsync(id, false, cancellationToken);
 
         if (job is null)
         {
@@ -135,8 +138,8 @@ public sealed class EtlJobsController : Controller
             var mappings = BuildDomainMappings(job.Id, model.FieldMappings);
             job.ReplaceFieldMappings(mappings);
 
-            _dbContext.EtlJobs.Add(job);
-            await _dbContext.SaveChangesAsync(cancellationToken);
+            _etlJobRepository.AddJob(job);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             TempData["SuccessMessage"] = "ETL job created successfully.";
             return RedirectToAction(nameof(Details), new { id = job.Id });
@@ -151,10 +154,7 @@ public sealed class EtlJobsController : Controller
     [HttpGet]
     public async Task<IActionResult> Edit(Guid id, CancellationToken cancellationToken)
     {
-        var job = await _dbContext.EtlJobs
-            .AsNoTracking()
-            .Include(x => x.FieldMappings)
-            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        var job = await _etlJobRepository.GetJobWithDetailsByIdAsync(id, false, cancellationToken);
 
         if (job is null)
         {
@@ -211,9 +211,7 @@ public sealed class EtlJobsController : Controller
             return View(model);
         }
 
-        var job = await _dbContext.EtlJobs
-            .Include(x => x.FieldMappings)
-            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        var job = await _etlJobRepository.GetJobWithDetailsByIdAsync(id, true, cancellationToken);
 
         if (job is null)
         {
@@ -243,7 +241,7 @@ public sealed class EtlJobsController : Controller
                 job.Deactivate();
             }
 
-            await _dbContext.SaveChangesAsync(cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
             TempData["SuccessMessage"] = "ETL job updated successfully.";
             return RedirectToAction(nameof(Details), new { id = job.Id });
         }
@@ -258,10 +256,7 @@ public sealed class EtlJobsController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Run(Guid id, CancellationToken cancellationToken)
     {
-        var job = await _dbContext.EtlJobs
-            .Include(x => x.FieldMappings)
-            .Include(x => x.JobHistory)
-            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        var job = await _etlJobRepository.GetJobForExecutionAsync(id, cancellationToken);
 
         if (job is null)
         {
@@ -281,7 +276,7 @@ public sealed class EtlJobsController : Controller
         }
 
         job.MarkQueued();
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         var backgroundJobId = _backgroundJobClient.Enqueue<EtlJobBackgroundJob>(x => x.ExecuteAsync(id));
         _logger.LogInformation("Queued ETL job {JobId} to Hangfire background job {BackgroundJobId}.", id, backgroundJobId);
@@ -294,14 +289,14 @@ public sealed class EtlJobsController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Activate(Guid id, CancellationToken cancellationToken)
     {
-        var job = await _dbContext.EtlJobs.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        var job = await _etlJobRepository.GetJobByIdAsync(id, true, cancellationToken);
         if (job is null)
         {
             return NotFound();
         }
 
         job.Activate();
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
         return RedirectToAction(nameof(Details), new { id });
     }
 
@@ -309,33 +304,29 @@ public sealed class EtlJobsController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Deactivate(Guid id, CancellationToken cancellationToken)
     {
-        var job = await _dbContext.EtlJobs.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        var job = await _etlJobRepository.GetJobByIdAsync(id, true, cancellationToken);
         if (job is null)
         {
             return NotFound();
         }
 
         job.Deactivate();
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
         return RedirectToAction(nameof(Details), new { id });
     }
 
     [HttpGet]
     public async Task<IActionResult> History(Guid id, CancellationToken cancellationToken)
     {
-        var job = await _dbContext.EtlJobs
-            .AsNoTracking()
-            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        var job = await _etlJobRepository.GetJobByIdAsync(id, false, cancellationToken);
 
         if (job is null)
         {
             return NotFound();
         }
 
-        var runs = await _dbContext.EtlJobHistory
-            .AsNoTracking()
-            .Where(x => x.EtlJobId == id)
-            .OrderByDescending(x => x.StartedAtUtc)
+        var history = await _etlJobRepository.GetJobHistoryAsync(id, cancellationToken);
+        var runs = history
             .Select(x => new EtlJobRunHistoryItemViewModel
             {
                 HistoryId = x.Id,
@@ -348,7 +339,7 @@ public sealed class EtlJobsController : Controller
                 RecordsFailed = x.RecordsFailed,
                 ErrorMessage = x.ErrorMessage
             })
-            .ToListAsync(cancellationToken);
+            .ToList();
 
         return View(new EtlJobRunHistoryViewModel
         {
@@ -361,19 +352,15 @@ public sealed class EtlJobsController : Controller
     [HttpGet]
     public async Task<IActionResult> Logs(Guid id, CancellationToken cancellationToken)
     {
-        var jobExists = await _dbContext.EtlJobs
-            .AsNoTracking()
-            .AnyAsync(x => x.Id == id, cancellationToken);
+        var jobExists = await _etlJobRepository.JobExistsAsync(id, cancellationToken);
 
         if (!jobExists)
         {
             return NotFound();
         }
 
-        var errorRuns = await _dbContext.EtlJobHistory
-            .AsNoTracking()
-            .Where(x => x.EtlJobId == id && x.Status == EtlJobStatus.Failed)
-            .OrderByDescending(x => x.StartedAtUtc)
+        var history = await _etlJobRepository.GetJobErrorHistoryAsync(id, cancellationToken);
+        var errorRuns = history
             .Select(x => new EtlJobRunHistoryItemViewModel
             {
                 HistoryId = x.Id,
@@ -386,7 +373,7 @@ public sealed class EtlJobsController : Controller
                 RecordsFailed = x.RecordsFailed,
                 ErrorMessage = x.ErrorMessage
             })
-            .ToListAsync(cancellationToken);
+            .ToList();
 
         return View(new EtlJobRunHistoryViewModel
         {
@@ -404,8 +391,7 @@ public sealed class EtlJobsController : Controller
             throw new DomainException("You must be logged in to create an ETL job.");
         }
 
-        var appUser = await _dbContext.UsersProfile
-            .FirstOrDefaultAsync(x => x.IdentityId == identityUser.Id, cancellationToken);
+        var appUser = await _userRepository.GetUserByIdentityIdAsync(identityUser.Id, cancellationToken);
 
         if (appUser is not null)
         {
@@ -417,8 +403,8 @@ public sealed class EtlJobsController : Controller
             identityUser.UserName ?? identityUser.Email ?? "etl-user",
             identityUser.Email ?? $"{identityUser.Id}@local");
 
-        _dbContext.UsersProfile.Add(appUser);
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        _userRepository.AddUser(appUser);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
         return appUser.Id;
     }
 

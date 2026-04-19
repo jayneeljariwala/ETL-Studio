@@ -1,34 +1,33 @@
 using ETL.Application.ETL.Abstractions;
 using ETL.Application.ETL.Models;
+using ETL.Application.Interfaces.Repositories;
 using ETL.Domain.Enums;
-using ETL.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace ETL.Infrastructure.BackgroundJobs;
 
 public sealed class EtlJobBackgroundJob
 {
-    private readonly ApplicationDbContext _dbContext;
+    private readonly IEtlJobRepository _etlJobRepository;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly IEtlEngine _etlEngine;
     private readonly ILogger<EtlJobBackgroundJob> _logger;
 
     public EtlJobBackgroundJob(
-        ApplicationDbContext dbContext,
+        IEtlJobRepository etlJobRepository,
+        IUnitOfWork unitOfWork,
         IEtlEngine etlEngine,
         ILogger<EtlJobBackgroundJob> logger)
     {
-        _dbContext = dbContext;
+        _etlJobRepository = etlJobRepository;
+        _unitOfWork = unitOfWork;
         _etlEngine = etlEngine;
         _logger = logger;
     }
 
     public async Task ExecuteAsync(Guid jobId)
     {
-        var job = await _dbContext.EtlJobs
-            .Include(x => x.FieldMappings)
-            .Include(x => x.JobHistory)
-            .FirstOrDefaultAsync(x => x.Id == jobId);
+        var job = await _etlJobRepository.GetJobForExecutionAsync(jobId);
 
         if (job is null)
         {
@@ -39,14 +38,14 @@ public sealed class EtlJobBackgroundJob
         if (!job.IsActive)
         {
             job.MarkFailed("ETL job is inactive and cannot be executed.");
-            await _dbContext.SaveChangesAsync();
+            await _unitOfWork.SaveChangesAsync();
             return;
         }
 
         if (job.FieldMappings.Count == 0)
         {
             job.MarkFailed("No field mappings configured.");
-            await _dbContext.SaveChangesAsync();
+            await _unitOfWork.SaveChangesAsync();
             return;
         }
 
@@ -99,6 +98,6 @@ public sealed class EtlJobBackgroundJob
                 executionResult.RecordsFailed);
         }
 
-        await _dbContext.SaveChangesAsync();
+        await _unitOfWork.SaveChangesAsync();
     }
 }

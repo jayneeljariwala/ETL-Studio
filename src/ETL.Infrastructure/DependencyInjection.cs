@@ -1,3 +1,4 @@
+using ETL.Application.Interfaces.Repositories;
 using ETL.Infrastructure.BackgroundJobs;
 using ETL.Application.ETL.Abstractions;
 using ETL.Infrastructure.ETL.Engine;
@@ -5,6 +6,7 @@ using ETL.Infrastructure.ETL.Extractors;
 using ETL.Infrastructure.ETL.Loaders;
 using ETL.Infrastructure.ETL.Transform;
 using ETL.Infrastructure.Persistence;
+using ETL.Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,6 +25,10 @@ public static class DependencyInjection
                 npgsql.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)));
 
         services.AddHttpClient();
+
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
+        services.AddScoped<IEtlJobRepository, EtlJobRepository>();
+        services.AddScoped<IUserRepository, UserRepository>();
 
         services.AddScoped<IDataExtractor, CsvDataExtractor>();
         services.AddScoped<IDataExtractor, ExcelDataExtractor>();

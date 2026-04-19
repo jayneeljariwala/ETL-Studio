@@ -38,3 +38,34 @@ Efficient, batch-based loading mechanisms targeting structured relational schema
 
 ### 5. Security & Identity
 *   Incorporates **ASP.NET Core Identity** for authentication, user management, and secure boundaries around defined tenant configurations.
+
+## Run With Docker
+
+Prerequisites:
+*   Docker Desktop (or Docker Engine + Compose plugin)
+
+Start the full stack (web + PostgreSQL):
+
+```bash
+docker compose up --build
+```
+
+Then open:
+*   App: `http://localhost:8080`
+*   Hangfire Dashboard: `http://localhost:8080/hangfire`
+
+Stop and remove containers:
+
+```bash
+docker compose down
+```
+
+If you also want to remove the PostgreSQL volume (full DB reset):
+
+```bash
+docker compose down -v
+```
+
+Notes:
+*   EF Core migrations are applied automatically on app startup.
+*   The app container uses `ConnectionStrings__DefaultConnection` pointing at the `postgres` service.

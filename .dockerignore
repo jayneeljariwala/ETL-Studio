@@ -1,0 +1,13 @@
+**/bin/
+**/obj/
+**/.vs/
+**/.vscode/
+**/*.user
+**/*.suo
+**/*.db
+**/*.log
+.git/
+.gitignore
+README.md
+scratch/
+tests/

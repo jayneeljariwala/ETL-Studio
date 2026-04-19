@@ -5,12 +5,10 @@ using ETL.Domain.ValueObjects;
 using ETL.Infrastructure.BackgroundJobs;
 using ETL.Infrastructure.Identity;
 using ETL.Application.Interfaces.Repositories;
-using ETL.Infrastructure.Identity;
 using ETL.Web.Models.EtlJobs;
 using Hangfire;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ETL.Web.Controllers;

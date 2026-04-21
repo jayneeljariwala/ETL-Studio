@@ -332,6 +332,11 @@ a:hover {
   border-color: rgba(255, 255, 255, 0.08) !important;
 }
 
+[data-bs-theme="dark"] .btn-primary {
+  color: #022c22 !important;
+  font-weight: 600;
+}
+
 [data-bs-theme="dark"] .btn-outline-primary {
   border-color: #2dd4bf;
   color: #2dd4bf;
@@ -339,11 +344,12 @@ a:hover {
 
 [data-bs-theme="dark"] .btn-outline-primary:hover {
   background-color: rgba(45, 212, 191, 0.1);
+  color: #fff;
 }
 
 [data-bs-theme="dark"] .table thead th {
-  background-color: #1e293b;
-  color: #94a3b8;
+  background-color: #1e293b !important;
+  color: #f1f5f9 !important;
   border-bottom-color: #334155;
 }
 
@@ -397,6 +403,10 @@ a:hover {
 [data-bs-theme="dark"] .identity-theme main h2,
 [data-bs-theme="dark"] .identity-theme main h3 {
   color: #cbd5e1;
+}
+
+[data-bs-theme="dark"] .bg-white {
+  background-color: transparent !important;
 }
 
 [data-bs-theme="dark"] .text-dark {

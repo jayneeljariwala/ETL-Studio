@@ -282,3 +282,141 @@ a:hover {
 .identity-theme main .btn-primary {
   width: 100%;
 }
+
+/* Dark Theme Support */
+[data-bs-theme="dark"] {
+  --app-bg: #121416;
+  --app-ink: #e2e8f0;
+  --app-muted: #94a3b8;
+  --app-line: #334155;
+  --app-brand: #2dd4bf;
+  --app-brand-2: #14b8a6;
+  --app-brand-soft: #134e4a;
+  --app-danger-soft: #450a0a;
+  --app-card: rgba(30, 41, 59, 0.92);
+  --app-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+}
+
+[data-bs-theme="dark"] body {
+  background:
+    radial-gradient(circle at 12% -8%, rgba(45, 212, 191, 0.1) 0%, transparent 36%),
+    radial-gradient(circle at 88% 0%, rgba(56, 189, 248, 0.08) 0%, transparent 32%),
+    linear-gradient(180deg, #0f172a 0%, var(--app-bg) 80%);
+}
+
+[data-bs-theme="dark"] .app-navbar {
+  background: rgba(15, 23, 42, 0.88);
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-bs-theme="dark"] .navbar-brand {
+  color: var(--app-brand-2) !important;
+}
+
+[data-bs-theme="dark"] .navbar-nav .nav-link {
+  color: #cbd5e1 !important;
+}
+
+[data-bs-theme="dark"] .navbar-nav .nav-link:hover,
+[data-bs-theme="dark"] .navbar-nav .nav-link:focus {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: #f8fafc !important;
+}
+
+[data-bs-theme="dark"] .app-hero {
+  background: linear-gradient(132deg, #1e293b 15%, #0f172a 100%);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-bs-theme="dark"] .card {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-bs-theme="dark"] .btn-primary {
+  color: #022c22 !important;
+  font-weight: 600;
+}
+
+[data-bs-theme="dark"] .btn-outline-primary {
+  border-color: #2dd4bf;
+  color: #2dd4bf;
+}
+
+[data-bs-theme="dark"] .btn-outline-primary:hover {
+  background-color: rgba(45, 212, 191, 0.1);
+  color: #fff;
+}
+
+[data-bs-theme="dark"] .table thead th {
+  background-color: #1e293b !important;
+  color: #f1f5f9 !important;
+  border-bottom-color: #334155;
+}
+
+[data-bs-theme="dark"] .table td,
+[data-bs-theme="dark"] .table th {
+  border-color: #334155;
+  color: var(--app-ink);
+}
+
+[data-bs-theme="dark"] .table-hover tbody tr:hover {
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
+[data-bs-theme="dark"] .form-control,
+[data-bs-theme="dark"] .form-select {
+  background-color: #1e293b;
+  border-color: #475569;
+  color: #f1f5f9;
+}
+
+[data-bs-theme="dark"] .form-control:focus,
+[data-bs-theme="dark"] .form-select:focus {
+  background-color: #1e293b;
+  color: #f1f5f9;
+  border-color: #2dd4bf;
+}
+
+[data-bs-theme="dark"] pre {
+  background-color: #0f172a;
+  border-color: #334155;
+}
+
+[data-bs-theme="dark"] a {
+  color: #5eead4;
+}
+
+[data-bs-theme="dark"] a:hover {
+  color: #99f6e4;
+}
+
+[data-bs-theme="dark"] .identity-theme main .row {
+  background: linear-gradient(140deg, #1e293b, #0f172a);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-bs-theme="dark"] .identity-theme main form[method="post"] {
+  background-color: #0f172a;
+  border-color: #334155;
+}
+
+[data-bs-theme="dark"] .identity-theme main h2,
+[data-bs-theme="dark"] .identity-theme main h3 {
+  color: #cbd5e1;
+}
+
+[data-bs-theme="dark"] .bg-white {
+  background-color: transparent !important;
+}
+
+[data-bs-theme="dark"] .text-dark {
+  color: #e2e8f0 !important;
+}
+
+[data-bs-theme="dark"] .text-muted {
+  color: #94a3b8 !important;
+}
+
+[data-bs-theme="dark"] .nav-link.text-dark {
+  color: #cbd5e1 !important;
+}

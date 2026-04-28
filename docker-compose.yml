@@ -21,6 +21,8 @@ services:
       POSTGRES_DB: etlprojectdb
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: 1234
+    ports:
+      - "5433:5432"
     volumes:
       - etl-postgres-data:/var/lib/postgresql/data
     healthcheck:

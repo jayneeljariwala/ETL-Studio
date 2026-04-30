@@ -2,12 +2,20 @@ using ETL.Application.ETL.Abstractions;
 using ETL.Domain.Common;
 using ETL.Domain.Enums;
 using ETL.Infrastructure.ETL.Configuration;
+using Microsoft.Extensions.Logging;
 using Microsoft.Data.SqlClient;
 
 namespace ETL.Infrastructure.ETL.Extractors;
 
 public sealed class SqlServerDataExtractor : IDataExtractor
 {
+    private readonly ILogger<SqlServerDataExtractor> _logger;
+
+    public SqlServerDataExtractor(ILogger<SqlServerDataExtractor> logger)
+    {
+        _logger = logger;
+    }
+
     public DataSourceType SourceType => DataSourceType.SqlServer;
 
     public async IAsyncEnumerable<IReadOnlyDictionary<string, object?>> ExtractAsync(
@@ -21,7 +29,26 @@ public sealed class SqlServerDataExtractor : IDataExtractor
         }
 
         await using var connection = new SqlConnection(config.ConnectionString);
-        await connection.OpenAsync(cancellationToken);
+        try
+        {
+            await connection.OpenAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            var builder = new SqlConnectionStringBuilder(config.ConnectionString);
+            var dataSource = builder.DataSource ?? "unknown";
+            
+            var extraMessage = "";
+            if (dataSource.Contains("localhost") || dataSource.Contains("127.0.0.1"))
+            {
+                extraMessage = " IMPORTANT: Since you are running in Docker, you likely need to use the service name instead of 'localhost'.";
+            }
+
+            _logger.LogError(ex, "Failed to connect to SQL Server Source at {DataSource}. Database: {Database}, User: {User}.{ExtraMessage}", 
+                dataSource, builder.InitialCatalog, builder.UserID, extraMessage);
+            
+            throw new DomainException($"Failed to connect to SQL Server Source at {dataSource}. Check your connection string.{extraMessage}", ex);
+        }
 
         await using var command = connection.CreateCommand();
         command.CommandText = config.Query;

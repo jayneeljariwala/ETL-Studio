@@ -276,7 +276,7 @@ public sealed class EtlJobsController : Controller
         job.MarkQueued();
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var backgroundJobId = _backgroundJobClient.Enqueue<EtlJobBackgroundJob>(x => x.ExecuteAsync(id));
+        var backgroundJobId = _backgroundJobClient.Enqueue<EtlJobBackgroundJob>(x => x.ExecuteAsync(id, CancellationToken.None));
         _logger.LogInformation("Queued ETL job {JobId} to Hangfire background job {BackgroundJobId}.", id, backgroundJobId);
         TempData["SuccessMessage"] = $"ETL job queued successfully. Background Id: {backgroundJobId}";
 

@@ -4,12 +4,20 @@ using ETL.Domain.Common;
 using ETL.Domain.Enums;
 using ETL.Infrastructure.ETL.Common;
 using ETL.Infrastructure.ETL.Configuration;
+using Microsoft.Extensions.Logging;
 using Microsoft.Data.SqlClient;
 
 namespace ETL.Infrastructure.ETL.Loaders;
 
 public sealed class SqlServerDataLoader : IDataLoader
 {
+    private readonly ILogger<SqlServerDataLoader> _logger;
+
+    public SqlServerDataLoader(ILogger<SqlServerDataLoader> logger)
+    {
+        _logger = logger;
+    }
+
     public DataDestinationType DestinationType => DataDestinationType.SqlServer;
 
     public async Task<int> LoadAsync(
@@ -27,7 +35,39 @@ public sealed class SqlServerDataLoader : IDataLoader
         ValidateDestinationConfig(config);
 
         await using var connection = new SqlConnection(config.ConnectionString);
-        await connection.OpenAsync(cancellationToken);
+        try
+        {
+            await connection.OpenAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            var builder = new SqlConnectionStringBuilder(config.ConnectionString);
+            var dataSource = builder.DataSource ?? "unknown";
+            
+            var extraMessage = "";
+            if (dataSource.Contains("localhost") || dataSource.Contains("127.0.0.1"))
+            {
+                extraMessage = " IMPORTANT: Since you are running in Docker, you likely need to use the service name (e.g. 'mssql') instead of 'localhost'.";
+            }
+            else if (dataSource.Contains(",1434"))
+            {
+                extraMessage = " IMPORTANT: Port 1434 is often used for host-machine mapping. From within Docker, you should likely use the internal port 1433.";
+            }
+            else if (ex is OperationCanceledException && !cancellationToken.IsCancellationRequested)
+            {
+                extraMessage = " The connection attempt timed out. Check if the database host is reachable and the port is correct.";
+            }
+            else if (ex is SqlException sex && sex.Number == -2) // -2 is timeout
+            {
+                extraMessage = " Connection timed out. This often happens if the hostname is wrong or a firewall is blocking the connection.";
+            }
+
+            _logger.LogError(ex, "Failed to connect to SQL Server at {DataSource}. Database: {Database}, User: {User}.{ExtraMessage}", 
+                dataSource, builder.InitialCatalog, builder.UserID, extraMessage);
+            
+            throw new DomainException($"Failed to connect to SQL Server at {dataSource}. {extraMessage.Trim()}", ex);
+        }
+
         await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
 
         var loaded = strategy switch
@@ -52,12 +92,19 @@ public sealed class SqlServerDataLoader : IDataLoader
         var table = SqlIdentifierHelper.QuoteSqlServerTable(config.TableName);
         var quotedColumns = string.Join(", ", columns.Select(SqlIdentifierHelper.QuoteSqlServerColumn));
 
-        var command = connection.CreateCommand();
-        command.Transaction = transaction;
-        var sql = new StringBuilder($"INSERT INTO {table} ({quotedColumns}) VALUES ");
+        var maxParameters = 2000;
+        var maxRowsPerBatch = maxParameters / columns.Length;
+        if (maxRowsPerBatch == 0) maxRowsPerBatch = 1;
 
-        var recordIndex = 0;
-        foreach (var record in records)
+        var loaded = 0;
+        foreach (var chunk in records.Chunk(maxRowsPerBatch))
+        {
+            var command = connection.CreateCommand();
+            command.Transaction = transaction;
+            var sql = new StringBuilder($"INSERT INTO {table} ({quotedColumns}) VALUES ");
+
+            var recordIndex = 0;
+            foreach (var record in chunk)
         {
             if (recordIndex > 0)
             {
@@ -82,7 +129,10 @@ public sealed class SqlServerDataLoader : IDataLoader
         }
 
         command.CommandText = sql.ToString();
-        return await command.ExecuteNonQueryAsync(cancellationToken);
+        loaded += await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+    
+    return loaded;
     }
 
     private static async Task<int> UpsertAsync(

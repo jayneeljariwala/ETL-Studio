@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using ETL.Application.ETL.Abstractions;
 using Microsoft.CodeAnalysis.Scripting;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
@@ -13,6 +14,8 @@ public sealed class RoslynExpressionEvaluator : ICustomExpressionEvaluator
             typeof(System.Collections.Generic.List<>).Assembly)
         .AddImports("System", "System.Linq", "System.Collections.Generic");
 
+    private static readonly ConcurrentDictionary<string, ScriptRunner<object?>> _cache = new();
+
     public Task<object?> EvaluateAsync(
         string expression,
         object? value,
@@ -25,6 +28,9 @@ public sealed class RoslynExpressionEvaluator : ICustomExpressionEvaluator
             Row = row
         };
 
-        return CSharpScript.EvaluateAsync<object?>(expression, ScriptOptions, globals, cancellationToken: cancellationToken);
+        var runner = _cache.GetOrAdd(expression, expr => 
+            CSharpScript.Create<object?>(expr, ScriptOptions, typeof(ScriptGlobals)).CreateDelegate());
+
+        return runner(globals, cancellationToken);
     }
 }

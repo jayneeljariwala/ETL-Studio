@@ -25,9 +25,9 @@ public sealed class EtlJobBackgroundJob
         _logger = logger;
     }
 
-    public async Task ExecuteAsync(Guid jobId)
+    public async Task ExecuteAsync(Guid jobId, CancellationToken cancellationToken)
     {
-        var job = await _etlJobRepository.GetJobForExecutionAsync(jobId);
+        var job = await _etlJobRepository.GetJobForExecutionAsync(jobId, cancellationToken);
 
         if (job is null)
         {
@@ -79,7 +79,7 @@ public sealed class EtlJobBackgroundJob
                 .ToList()
         };
 
-        var executionResult = await _etlEngine.ExecuteAsync(request, CancellationToken.None);
+        var executionResult = await _etlEngine.ExecuteAsync(request, cancellationToken);
         if (executionResult.IsSuccess)
         {
             job.MarkSucceeded(
@@ -98,6 +98,6 @@ public sealed class EtlJobBackgroundJob
                 executionResult.RecordsFailed);
         }
 
-        await _unitOfWork.SaveChangesAsync();
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
 }

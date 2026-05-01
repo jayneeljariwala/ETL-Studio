@@ -420,3 +420,11 @@ a:hover {
 [data-bs-theme="dark"] .nav-link.text-dark {
   color: #cbd5e1 !important;
 }
+
+[data-bs-theme="dark"] .alert-success.app-alert {
+  color: #ccfbf1;
+}
+
+[data-bs-theme="dark"] .alert-danger.app-alert {
+  color: #fee2e2;
+}

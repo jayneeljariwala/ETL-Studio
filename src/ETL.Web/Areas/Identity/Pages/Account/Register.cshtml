@@ -1,0 +1,173 @@
+@page
+@model RegisterModel
+@{
+    ViewData["Title"] = "Create Account";
+}
+
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <div class="brand-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <!-- Left Database (Extract) -->
+                    <ellipse cx="5" cy="7" rx="3" ry="2"/>
+                    <path d="M2 7v10A3 2 0 0 0 8 17V7"/>
+                    <path d="M2 12A3 2 0 0 0 8 12"/>
+                    <!-- Right Database (Load) -->
+                    <ellipse cx="19" cy="7" rx="3" ry="2"/>
+                    <path d="M16 7v10A3 2 0 0 0 22 17V7"/>
+                    <path d="M16 12A3 2 0 0 0 22 12"/>
+                    <!-- Middle Gear (Transform) -->
+                    <circle cx="12" cy="12" r="2"/>
+                    <path d="M12 10V9"/>
+                    <path d="M12 14v1"/>
+                    <path d="M13.4 10.6l.7-.7"/>
+                    <path d="M10.6 13.4l-.7.7"/>
+                    <path d="M13.4 13.4l.7.7"/>
+                    <path d="M10.6 10.6l-.7-.7"/>
+                    <!-- Flow Arrows -->
+                    <path d="M8 12h2"/>
+                    <path d="M9 11l1 1-1 1"/>
+                    <path d="M14 12h2"/>
+                    <path d="M15 11l1 1-1 1"/>
+                </svg>
+            </div>
+            <h1 class="auth-title">Get Started</h1>
+            <p class="auth-subtitle">Create your account to start using ETL Studio</p>
+        </div>
+
+        <form id="registerForm" method="post" class="auth-form">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger app-alert" role="alert"></div>
+
+            <div class="form-floating mb-3">
+                <input asp-for="Input.Email" class="form-control" placeholder="name@example.com"
+                       autocomplete="username" />
+                <label asp-for="Input.Email">Email address</label>
+                <span asp-validation-for="Input.Email" class="text-danger"></span>
+            </div>
+
+            <div class="form-floating mb-3">
+                <input asp-for="Input.Password" class="form-control" placeholder="password"
+                       autocomplete="new-password" />
+                <label asp-for="Input.Password">Password</label>
+                <span asp-validation-for="Input.Password" class="text-danger"></span>
+            </div>
+
+            <div class="form-floating mb-4">
+                <input asp-for="Input.ConfirmPassword" class="form-control" placeholder="confirm-password"
+                       autocomplete="new-password" />
+                <label asp-for="Input.ConfirmPassword">Confirm password</label>
+                <span asp-validation-for="Input.ConfirmPassword" class="text-danger"></span>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-auth">Create Account</button>
+        </form>
+
+        <div class="auth-footer">
+            <p>Already have an account? <a asp-page="./Login" asp-route-returnUrl="@Model.ReturnUrl">Sign in</a></p>
+        </div>
+    </div>
+</div>
+
+<style>
+    .auth-container {
+        min-height: calc(100vh - 200px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem 1rem;
+    }
+
+    .auth-card {
+        width: 100%;
+        max-width: 420px;
+        background: var(--app-card);
+        border: 1px solid rgba(20, 122, 108, 0.12);
+        border-radius: 20px;
+        box-shadow: var(--app-shadow);
+        padding: 2.5rem 2rem;
+    }
+
+    .auth-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .brand-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 64px;
+        height: 64px;
+        background: linear-gradient(135deg, var(--app-brand), var(--app-brand-2));
+        border-radius: 16px;
+        color: white;
+        margin-bottom: 1.25rem;
+        box-shadow: 0 8px 20px rgba(20, 122, 108, 0.25);
+    }
+
+    .auth-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--app-ink);
+        margin-bottom: 0.5rem;
+    }
+
+    .auth-subtitle {
+        color: var(--app-muted);
+        font-size: 0.95rem;
+        margin: 0;
+    }
+
+    .auth-form {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-floating>label {
+        color: var(--app-muted);
+    }
+
+    .btn-auth {
+        width: 100%;
+        padding: 0.875rem;
+        font-size: 1rem;
+    }
+
+    .auth-footer {
+        text-align: center;
+        padding-top: 1rem;
+        border-top: 1px solid var(--app-line);
+    }
+
+    .auth-footer p {
+        margin: 0;
+        color: var(--app-muted);
+    }
+
+    .auth-footer a {
+        color: var(--app-brand);
+        font-weight: 600;
+        text-decoration: none;
+    }
+
+    .auth-footer a:hover {
+        color: var(--app-brand-2);
+    }
+
+    [data-bs-theme="dark"] .auth-card {
+        background: var(--app-card);
+    }
+
+    [data-bs-theme="dark"] .auth-title {
+        color: var(--app-ink);
+    }
+
+    [data-bs-theme="dark"] .brand-icon {
+        color: #022c22;
+    }
+
+    [data-bs-theme="dark"] .auth-footer a {
+        color: var(--app-brand);
+    }
+</style>

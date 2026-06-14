@@ -42,7 +42,8 @@ public sealed class EtlJobsController : Controller
     [HttpGet]
     public async Task<IActionResult> Index(CancellationToken cancellationToken)
     {
-        var allJobs = await _etlJobRepository.GetAllJobsAsync(cancellationToken);
+        var ownerId = await GetCurrentOwnerIdAsync(cancellationToken);
+        var allJobs = await _etlJobRepository.GetAllJobsByOwnerAsync(ownerId, cancellationToken);
         var jobs = allJobs
             .Select(x => new EtlJobListItemViewModel
             {
@@ -62,7 +63,8 @@ public sealed class EtlJobsController : Controller
     [HttpGet]
     public async Task<IActionResult> Details(Guid id, CancellationToken cancellationToken)
     {
-        var job = await _etlJobRepository.GetJobWithDetailsByIdAsync(id, false, cancellationToken);
+        var ownerId = await GetCurrentOwnerIdAsync(cancellationToken);
+        var job = await _etlJobRepository.GetJobWithDetailsByIdForOwnerAsync(id, ownerId, false, cancellationToken);
 
         if (job is null)
         {
@@ -122,7 +124,7 @@ public sealed class EtlJobsController : Controller
 
         try
         {
-            var ownerId = await EnsureApplicationUserAsync(cancellationToken);
+            var ownerId = await GetCurrentOwnerIdAsync(cancellationToken);
             var job = EtlJob.Create(
                 model.Name,
                 model.Description,
@@ -152,7 +154,8 @@ public sealed class EtlJobsController : Controller
     [HttpGet]
     public async Task<IActionResult> Edit(Guid id, CancellationToken cancellationToken)
     {
-        var job = await _etlJobRepository.GetJobWithDetailsByIdAsync(id, false, cancellationToken);
+        var ownerId = await GetCurrentOwnerIdAsync(cancellationToken);
+        var job = await _etlJobRepository.GetJobWithDetailsByIdForOwnerAsync(id, ownerId, false, cancellationToken);
 
         if (job is null)
         {
@@ -209,7 +212,8 @@ public sealed class EtlJobsController : Controller
             return View(model);
         }
 
-        var job = await _etlJobRepository.GetJobWithDetailsByIdAsync(id, true, cancellationToken);
+        var ownerId = await GetCurrentOwnerIdAsync(cancellationToken);
+        var job = await _etlJobRepository.GetJobWithDetailsByIdForOwnerAsync(id, ownerId, true, cancellationToken);
 
         if (job is null)
         {
@@ -254,7 +258,8 @@ public sealed class EtlJobsController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Run(Guid id, CancellationToken cancellationToken)
     {
-        var job = await _etlJobRepository.GetJobForExecutionAsync(id, cancellationToken);
+        var ownerId = await GetCurrentOwnerIdAsync(cancellationToken);
+        var job = await _etlJobRepository.GetJobForExecutionByOwnerAsync(id, ownerId, cancellationToken);
 
         if (job is null)
         {
@@ -287,7 +292,8 @@ public sealed class EtlJobsController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Activate(Guid id, CancellationToken cancellationToken)
     {
-        var job = await _etlJobRepository.GetJobByIdAsync(id, true, cancellationToken);
+        var ownerId = await GetCurrentOwnerIdAsync(cancellationToken);
+        var job = await _etlJobRepository.GetJobByIdForOwnerAsync(id, ownerId, true, cancellationToken);
         if (job is null)
         {
             return NotFound();
@@ -302,7 +308,8 @@ public sealed class EtlJobsController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Deactivate(Guid id, CancellationToken cancellationToken)
     {
-        var job = await _etlJobRepository.GetJobByIdAsync(id, true, cancellationToken);
+        var ownerId = await GetCurrentOwnerIdAsync(cancellationToken);
+        var job = await _etlJobRepository.GetJobByIdForOwnerAsync(id, ownerId, true, cancellationToken);
         if (job is null)
         {
             return NotFound();
@@ -316,14 +323,15 @@ public sealed class EtlJobsController : Controller
     [HttpGet]
     public async Task<IActionResult> History(Guid id, CancellationToken cancellationToken)
     {
-        var job = await _etlJobRepository.GetJobByIdAsync(id, false, cancellationToken);
+        var ownerId = await GetCurrentOwnerIdAsync(cancellationToken);
+        var job = await _etlJobRepository.GetJobByIdForOwnerAsync(id, ownerId, false, cancellationToken);
 
         if (job is null)
         {
             return NotFound();
         }
 
-        var history = await _etlJobRepository.GetJobHistoryAsync(id, cancellationToken);
+        var history = await _etlJobRepository.GetJobHistoryForOwnerAsync(id, ownerId, cancellationToken);
         var runs = history
             .Select(x => new EtlJobRunHistoryItemViewModel
             {
@@ -350,14 +358,15 @@ public sealed class EtlJobsController : Controller
     [HttpGet]
     public async Task<IActionResult> Logs(Guid id, CancellationToken cancellationToken)
     {
-        var jobExists = await _etlJobRepository.JobExistsAsync(id, cancellationToken);
+        var ownerId = await GetCurrentOwnerIdAsync(cancellationToken);
+        var jobExists = await _etlJobRepository.JobBelongsToOwnerAsync(id, ownerId, cancellationToken);
 
         if (!jobExists)
         {
             return NotFound();
         }
 
-        var history = await _etlJobRepository.GetJobErrorHistoryAsync(id, cancellationToken);
+        var history = await _etlJobRepository.GetJobErrorHistoryForOwnerAsync(id, ownerId, cancellationToken);
         var errorRuns = history
             .Select(x => new EtlJobRunHistoryItemViewModel
             {
@@ -381,12 +390,12 @@ public sealed class EtlJobsController : Controller
         });
     }
 
-    private async Task<Guid> EnsureApplicationUserAsync(CancellationToken cancellationToken)
+    private async Task<Guid> GetCurrentOwnerIdAsync(CancellationToken cancellationToken)
     {
         var identityUser = await _userManager.GetUserAsync(User);
         if (identityUser is null)
         {
-            throw new DomainException("You must be logged in to create an ETL job.");
+            throw new DomainException("You must be logged in to manage ETL jobs.");
         }
 
         var appUser = await _userRepository.GetUserByIdentityIdAsync(identityUser.Id, cancellationToken);

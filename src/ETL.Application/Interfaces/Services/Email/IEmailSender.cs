@@ -1,6 +1,6 @@
 using System.Threading.Tasks;
 
-namespace ETL.Infrastructure.Services.Email;
+namespace ETL.Application.Interfaces.Services.Email;
 
 public interface IEmailSender
 {

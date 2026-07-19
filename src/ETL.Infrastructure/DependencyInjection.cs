@@ -7,6 +7,7 @@ using ETL.Infrastructure.ETL.Loaders;
 using ETL.Infrastructure.ETL.Transform;
 using ETL.Infrastructure.Persistence;
 using ETL.Infrastructure.Persistence.Repositories;
+using ETL.Application.Interfaces.Services.Email;
 using ETL.Infrastructure.Services.Email;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;

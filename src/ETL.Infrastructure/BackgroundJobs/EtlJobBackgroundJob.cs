@@ -2,7 +2,9 @@ using ETL.Application.ETL.Abstractions;
 using ETL.Application.ETL.Models;
 using ETL.Application.Interfaces.Repositories;
 using ETL.Domain.Enums;
+using ETL.Infrastructure.Services.Email;
 using Microsoft.Extensions.Logging;
+using System.Threading.Tasks;
 
 namespace ETL.Infrastructure.BackgroundJobs;
 
@@ -11,17 +13,20 @@ public sealed class EtlJobBackgroundJob
     private readonly IEtlJobRepository _etlJobRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IEtlEngine _etlEngine;
+    private readonly IEmailSender _emailSender;
     private readonly ILogger<EtlJobBackgroundJob> _logger;
 
     public EtlJobBackgroundJob(
         IEtlJobRepository etlJobRepository,
         IUnitOfWork unitOfWork,
         IEtlEngine etlEngine,
+        IEmailSender emailSender,
         ILogger<EtlJobBackgroundJob> logger)
     {
         _etlJobRepository = etlJobRepository;
         _unitOfWork = unitOfWork;
         _etlEngine = etlEngine;
+        _emailSender = emailSender;
         _logger = logger;
     }
 
@@ -38,14 +43,14 @@ public sealed class EtlJobBackgroundJob
         if (!job.IsActive)
         {
             job.MarkFailed("ETL job is inactive and cannot be executed.");
-            await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
             return;
         }
 
         if (job.FieldMappings.Count == 0)
         {
             job.MarkFailed("No field mappings configured.");
-            await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
             return;
         }
 
@@ -99,5 +104,28 @@ public sealed class EtlJobBackgroundJob
         }
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        // Send failure notification email if job failed
+        if (job.CurrentStatus == EtlJobStatus.Failed && job.CreatedByUser != null)
+        {
+            var userEmail = job.CreatedByUser.Email;
+            var subject = $"ETL Job Failed: {job.Name}";
+            var body = $@"
+An ETL job has failed.
+
+Job Details:
+- Name: {job.Name}
+- Description: {job.Description}
+- Status: {job.CurrentStatus}
+- Failed at: {DateTime.UtcNow:u} UTC
+- Error Message: {job.JobHistory.LastOrDefault()?.ErrorMessage ?? "No error details available"}
+
+Please check the ETL dashboard for more information.
+
+This is an automated notification from the ETL system.
+";
+
+            await _emailSender.SendEmailAsync(userEmail, subject, body);
+        }
     }
 }

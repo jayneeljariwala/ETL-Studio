@@ -203,6 +203,7 @@ public sealed class EtlJobRepository : IEtlJobRepository
         return _dbContext.EtlJobs
             .Include(x => x.FieldMappings)
             .Include(x => x.JobHistory)
+            .Include(x => x.CreatedByUser)
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
     }
 

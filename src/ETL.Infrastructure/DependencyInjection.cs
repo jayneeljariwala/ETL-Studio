@@ -7,9 +7,11 @@ using ETL.Infrastructure.ETL.Loaders;
 using ETL.Infrastructure.ETL.Transform;
 using ETL.Infrastructure.Persistence;
 using ETL.Infrastructure.Persistence.Repositories;
+using ETL.Infrastructure.Services.Email;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace ETL.Infrastructure;
 
@@ -42,6 +44,9 @@ public static class DependencyInjection
         services.AddScoped<IDataTransformer, TransformationPipeline>();
         services.AddScoped<IEtlEngine, EtlEngine>();
         services.AddScoped<EtlJobBackgroundJob>();
+
+        services.Configure<EmailOptions>(configuration.GetSection("Email"));
+        services.AddScoped<IEmailSender, SmtpEmailSender>();
 
         return services;
     }

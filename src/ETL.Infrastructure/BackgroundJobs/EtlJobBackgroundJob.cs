@@ -2,7 +2,7 @@ using ETL.Application.ETL.Abstractions;
 using ETL.Application.ETL.Models;
 using ETL.Application.Interfaces.Repositories;
 using ETL.Domain.Enums;
-using ETL.Infrastructure.Services.Email;
+using ETL.Application.Interfaces.Services.Email;
 using Microsoft.Extensions.Logging;
 using System.Threading.Tasks;
 

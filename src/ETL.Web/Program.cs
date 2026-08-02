@@ -25,13 +25,7 @@ builder.Host.UseSerilog((context, services, configuration) =>
         .ReadFrom.Configuration(context.Configuration)
         .ReadFrom.Services(services)
         .Enrich.FromLogContext()
-        .Enrich.WithProperty("Application", "ETL.Web")
-        .MinimumLevel.Information()
-        .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
-        .MinimumLevel.Override("Microsoft.EntityFrameworkCore.Database.Command", LogEventLevel.Warning)
-        .MinimumLevel.Override("Hangfire", LogEventLevel.Information)
-        .WriteTo.Console()
-        .WriteTo.File("logs/etl-.log", rollingInterval: RollingInterval.Day, retainedFileCountLimit: 14);
+        .Enrich.WithProperty("Application", "ETL.Web");
 });
 
 builder.Services.AddControllersWithViews();

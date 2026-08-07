@@ -57,6 +57,15 @@ builder.Services.AddDefaultIdentity<AppIdentityUser>(options =>
     })
     .AddEntityFrameworkStores<ApplicationDbContext>();
 
+builder.Services.AddAuthentication()
+    .AddGoogle(options =>
+    {
+        options.ClientId = builder.Configuration["Authentication:Google:ClientId"]
+            ?? throw new InvalidOperationException("Google ClientId is not configured.");
+        options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"]
+            ?? throw new InvalidOperationException("Google ClientSecret is not configured.");
+    });
+
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())

@@ -1,0 +1,77 @@
+@page
+@model ExternalLoginModel
+@{
+    ViewData["Title"] = "Register with " + @Model.ProviderDisplayName;
+}
+
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <h1 class="auth-title">Complete Registration</h1>
+            <p class="auth-subtitle">
+                You've authenticated with <strong>@Model.ProviderDisplayName</strong>.
+                Please confirm your email to finish creating your account.
+            </p>
+        </div>
+
+        <form id="confirmation-form" method="post" asp-page-handler="Confirmation" asp-route-returnUrl="@Model.ReturnUrl" class="auth-form">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger app-alert" role="alert"></div>
+
+            <div class="form-floating mb-4">
+                <input asp-for="Input.Email" class="form-control" placeholder="name@example.com" autocomplete="email" />
+                <label asp-for="Input.Email">Email address</label>
+                <span asp-validation-for="Input.Email" class="text-danger"></span>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-auth">Create Account</button>
+        </form>
+    </div>
+</div>
+
+<style>
+    .auth-container {
+        min-height: calc(100vh - 200px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem 1rem;
+    }
+
+    .auth-card {
+        width: 100%;
+        max-width: 420px;
+        background: var(--app-card);
+        border: 1px solid rgba(20, 122, 108, 0.12);
+        border-radius: 20px;
+        box-shadow: var(--app-shadow);
+        padding: 2.5rem 2rem;
+    }
+
+    .auth-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .auth-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--app-ink);
+        margin-bottom: 0.5rem;
+    }
+
+    .auth-subtitle {
+        color: var(--app-muted);
+        font-size: 0.95rem;
+        margin: 0;
+    }
+
+    .auth-form {
+        margin-bottom: 1rem;
+    }
+
+    .btn-auth {
+        width: 100%;
+        padding: 0.875rem;
+        font-size: 1rem;
+    }
+</style>

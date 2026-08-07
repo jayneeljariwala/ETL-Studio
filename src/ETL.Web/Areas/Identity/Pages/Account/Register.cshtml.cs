@@ -5,6 +5,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text.Encodings.Web;
 using ETL.Infrastructure.Identity;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -32,6 +33,8 @@ public class RegisterModel : PageModel
 
     public string ReturnUrl { get; set; }
 
+    public IList<AuthenticationScheme> ExternalLogins { get; set; }
+
     public class InputModel
     {
         [Required]
@@ -54,6 +57,7 @@ public class RegisterModel : PageModel
     public async Task OnGetAsync(string returnUrl = null)
     {
         ReturnUrl = returnUrl;
+        ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
     }
 
     public async Task<IActionResult> OnPostAsync(string returnUrl = null)
